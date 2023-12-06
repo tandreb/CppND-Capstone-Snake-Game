@@ -5,7 +5,8 @@
 
 class Controller {
  public:
-  void HandleInput(bool &running, Snake &snake) const;
+  void HandleGameInput(bool &running, Snake &snake) const;
+  void HandleMenuInput(bool &running, int &selectedItem, bool &showMenuFlag) const ;
 
  private:
   void ChangeDirection(Snake &snake, Snake::Direction input,

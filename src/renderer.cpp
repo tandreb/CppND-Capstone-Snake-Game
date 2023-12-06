@@ -1,14 +1,30 @@
 #include "renderer.h"
+#include <SDL_ttf.h>
 #include <iostream>
 #include <string>
 
 Renderer::Renderer(const std::size_t screen_width,
                    const std::size_t screen_height,
                    const std::size_t grid_width, const std::size_t grid_height)
-    : screen_width(screen_width),
-      screen_height(screen_height),
-      grid_width(grid_width),
-      grid_height(grid_height) {
+    : screen_width(screen_width), screen_height(screen_height),
+      grid_width(grid_width), grid_height(grid_height),
+      font(nullptr) { // Initialize font to nullptr
+
+  // Initialize SDL_ttf
+  if (TTF_Init() < 0) {
+    std::cerr << "SDL_ttf could not initialize.\n";
+    std::cerr << "SDL_ttf Error: " << TTF_GetError() << "\n";
+  }
+
+  // Load a font (adjust the path to your font file)
+  font = TTF_OpenFont("/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+                      36); // Change the path and size as needed
+
+  if (font == nullptr) {
+    std::cerr << "Failed to load font.\n";
+    std::cerr << "SDL_ttf Error: " << TTF_GetError() << "\n";
+  }
+
   // Initialize SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     std::cerr << "SDL could not initialize.\n";
@@ -36,6 +52,58 @@ Renderer::Renderer(const std::size_t screen_width,
 Renderer::~Renderer() {
   SDL_DestroyWindow(sdl_window);
   SDL_Quit();
+}
+
+void Renderer::renderText(const char *text, int x, int y, TTF_Font *font,
+                          bool isSelected) {
+  SDL_Surface *surface;
+  if (isSelected) {
+    surface = TTF_RenderText_Shaded(font, text, {255, 255, 255, 255},
+                                    {255, 0, 0}); // White text, red bg
+  } else {
+    surface = TTF_RenderText_Shaded(font, text, {255, 255, 255, 255},
+                                    {0, 0, 0}); // White text, black bg
+  }
+  SDL_Texture *texture = SDL_CreateTextureFromSurface(sdl_renderer, surface);
+
+  SDL_Rect destRect = {x, y, surface->w, surface->h};
+  SDL_RenderCopy(sdl_renderer, texture, nullptr, &destRect);
+
+  SDL_FreeSurface(surface);
+  SDL_DestroyTexture(texture);
+}
+
+void Renderer::RenderMenu(TTF_Font *font, int &selectedItem) {
+  bool isSelected = false;
+  SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0,
+                         255); // Set background color to black
+  SDL_RenderClear(sdl_renderer);
+  // Render "New Game" option
+  if (selectedItem == 0) {
+    // Highlight the selected item with a different background color
+    // SDL_SetRenderDrawColor(sdl_renderer, 255, 0, 0, 255); // Red background
+    isSelected = true;
+  } else {
+    // std::cout << "selected 0 else\n";
+    // SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255); // Black background
+    isSelected = false;
+  }
+  renderText("New Game", 100, 200, font, isSelected);
+
+  // Render "Quit Game" option
+  if (selectedItem == 1) {
+    // std::cout << "selected 1\n";
+    // Highlight the selected item with a different background color
+    // SDL_SetRenderDrawColor(sdl_renderer, 255, 0, 0, 255); // Red background
+    isSelected = true;
+  } else {
+    // std::cout << "selected 1 else\n";
+    // SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255); // Black background
+    isSelected = false;
+  }
+  renderText("Quit Game", 100, 300, font, isSelected);
+
+  SDL_RenderPresent(sdl_renderer); // Update the screen
 }
 
 void Renderer::Render(Snake const snake, SDL_Point const &food) {
@@ -76,6 +144,7 @@ void Renderer::Render(Snake const snake, SDL_Point const &food) {
 }
 
 void Renderer::UpdateWindowTitle(int score, int fps) {
-  std::string title{"Snake Score: " + std::to_string(score) + " FPS: " + std::to_string(fps)};
+  std::string title{"Snake Score: " + std::to_string(score) +
+                    " FPS: " + std::to_string(fps)};
   SDL_SetWindowTitle(sdl_window, title.c_str());
 }
